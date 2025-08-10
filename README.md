@@ -17,6 +17,22 @@ Heidi can improve your project via:
 - *Improves maintainability* = changes to shared logic happen in one place.
 - *Allows conscistent patterns* = all handlers follow the same architectural approach.
 
+## The seperation of concerns 
+
+```
+Template(s)
+   \/
+Heidi Route(s)
+   \/
+Heidi Router(s)
+
+```
+- Templates are used in Heidi routes to inherit middleware and configuration. 
+- Templates are heirarchial and can inherit from other templates. 
+- Heidi routes are polymorphic and can inherit from multiple templates. 
+- Heidi routers are groups of related Heidi routes.
+- Heidi routers can declare router level middleware that runs before all associated routes. 
+
 ## Usage 
 
 ### Heidi Route
