@@ -8,6 +8,8 @@
 
 - [ ] Need to test functionality against AWS event types.
 
+- [ ] Need to create a demo project with mocked AWS requests.
+
 ## What is Heidi
 Heidi is an opinionated, high level abstraction of middy that provides declarative, reusable route handling configuration.
 
