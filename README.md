@@ -1,5 +1,7 @@
 # Heidi - a high level wrapper for middy
 
+The middy project: https://github.com/middyjs/middy
+
 ## DEVELOPMENT NOTICE BOARD
 
 - [ ] Need to implement tests for internal functionality.
