@@ -1,4 +1,12 @@
-import { APIGatewayEvent, S3Event, SNSEvent } from "aws-lambda";
+/**
+ * This document defines the configuration structure for various AWS event types.
+ * Each event type has its own configuration schema that specifies the attributes that can be matched to a specific route. 
+ * 
+ * We know the expected configuration structure in heidi() by passing the expected event type as a generic,
+ * we internally map those event types to the expected configuration structure.
+ */
+
+import { APIGatewayEvent } from "aws-lambda";
 
 /**
  * APIGateway configuration for matching records.

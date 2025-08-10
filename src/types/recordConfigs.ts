@@ -1,10 +1,18 @@
+/**
+ * This document defines the configuration structure for various AWS record types.
+ * Each record type has its own configuration schema that specifies the attributes that can be matched to a specific route. 
+ * 
+ * We know the expected configuration structure in heidi() by passing the expected record type as a generic,
+ * we internally map those record types to the expected configuration structure.
+ */
+
 import {
   DynamoDBRecord,
   S3EventRecord,
   SNSEventRecord,
   SQSRecord,
 } from "aws-lambda";
-import { ConstructedAttribute, AttributeConstruction } from "../helpers/attributes";
+import { ConstructedAttribute, AttributeConstruction } from "../helpers/attributeMatching";
 
 /**
  * DynamoDB configuration for matching records.

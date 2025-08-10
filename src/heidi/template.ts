@@ -2,15 +2,13 @@ import { Context } from "aws-lambda";
 import { MiddlewareObject } from "middy";
 import { heidi } from "./namespace";
 
-function heidiTemplateWrapper<
+function heidiTemplateWrapper<T, R, C extends Context>(): heidi.HeidiTemplate<
   T,
   R,
-  X,
-  C extends Context
->(): heidi.HeidiTemplate<T, R, X, C> {
-  // This function is a factory for creating a Heidi instance.
-  // It returns an instance of Middy with the Heidi interface.
-  return undefined as unknown as heidi.HeidiTemplate<T, R, X, C>;
+  C
+> {
+  // return an empty HeidiTemplate instance
+  return {} as heidi.HeidiTemplate<T, R, C>;
 }
 
 /**
@@ -21,10 +19,9 @@ function heidiTemplateWrapper<
 export function heidiTemplate<
   T = any,
   R = any,
-  X = never,
   C extends Context = Context
->(): heidi.HeidiTemplate<T, R, X, C> {
-  const heidiInstance = heidiTemplateWrapper<T, R, X, C>();
+>(): heidi.HeidiTemplate<T, R, C> {
+  const heidiInstance = heidiTemplateWrapper<T, R, C>();
 
   heidiInstance.configure = (config) => {
     const newHeidiInstance = Object.assign(heidiInstance, { config });
@@ -39,7 +36,7 @@ export function heidiTemplate<
   };
 
   heidiInstance.useTemplate = (
-    templates: Array<heidi.HeidiTemplate<T, R, X, C>>
+    templates: Array<heidi.HeidiTemplate<T, R, C>>
   ) => {
     for (const template of templates) {
       const middlewares = template.getMiddleware();
@@ -93,5 +90,5 @@ export function heidiTemplate<
     return this;
   };
 
-  return this.heidiInstance as heidi.HeidiTemplate<T, R, X, C>; // does not include heidi handler functionality, only the template functionality.
+  return this.heidiInstance as heidi.HeidiTemplate<T, R, C>; // does not include heidi handler functionality, only the template functionality.
 }

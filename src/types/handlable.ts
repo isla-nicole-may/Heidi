@@ -1,3 +1,9 @@
+/**
+ * Defining some broad types for AWS Lambda events and records.
+ * These types are used to define the structure of the events and records that can be handled by
+ * the Heidi framework.
+ */
+
 import {
   DynamoDBStreamEvent,
   SQSEvent,

@@ -3,29 +3,32 @@ import middy, { Middy, MiddlewareObject } from "middy";
 import { $MAP_CONFIG_TO_RECORD } from "../types/handlable";
 import { heidi } from "./namespace";
 
-function heidiWrapper<T, R, X, C extends Context>(
+function heidiWrapper<T, R, C extends Context>(
   handler: middy.Middy<T, R, C>
-): heidi.Heidi<T, R, X, C> {
-  // This function is a factory for creating a Heidi instance.
-  // It returns an instance of Middy with the Heidi interface.
-  return undefined as unknown as heidi.Heidi<T, R, X, C>;
-}
+): heidi.Heidi<T, R, C> {
+  // minise middy to its extendable handler functionality.
+  const extendableMiddyHandler: heidi.ExtendableMiddyHandler<T, R, C> = {
+    super_after: handler.after,
+    super_before: handler.before,
+    super_onError: handler.onError,
+    super_use: handler.use,
+  };
 
+  return extendableMiddyHandler as heidi.Heidi<T, R, C>;
+}
 
 /**
  * Middy factory function. Use it to wrap your existing handler to enable middlewares on it.
  * @param  {function} handler - your original AWS Lambda function
  * @return {middy} - a `middy` instance
  */
-export function heidi<T = any, R = any, X = never, C extends Context = Context>(
+export function heidi<T = any, R = any, C extends Context = Context>(
   handler
-): heidi.Heidi<T, R, X, C> {
+): heidi.Heidi<T, R, C> {
   const instance = middy<typeof handler, C>(handler);
-  const heidiInstance = heidiWrapper<T, R, X, C>(instance as Middy<T, R, C>);
+  const heidiInstance = heidiWrapper<T, R, C>(instance as Middy<T, R, C>);
 
-  heidiInstance.configure = (
-    config: [T] extends [never] ? X : $MAP_CONFIG_TO_RECORD<T>
-  ) => {
+  heidiInstance.configure = (config: $MAP_CONFIG_TO_RECORD<T>) => {
     const newHeidiInstance = Object.assign(heidiInstance, { config });
     this.heidiInstance = newHeidiInstance; // Assuming heidiInstance has a config property
     return this;
@@ -43,7 +46,7 @@ export function heidi<T = any, R = any, X = never, C extends Context = Context>(
   };
 
   heidiInstance.useTemplate = (
-    templates: Array<heidi.HeidiTemplate<T, R, X, C>>
+    templates: Array<heidi.HeidiTemplate<T, R, C>>
   ) => {
     for (const template of templates) {
       const middlewares = template.getMiddleware();
@@ -96,5 +99,5 @@ export function heidi<T = any, R = any, X = never, C extends Context = Context>(
       this.instance.super_onError(middleware);
     return this;
   };
-  return this.heidiInstance as heidi.Heidi<T, R, X, C>;
+  return this.heidiInstance as heidi.Heidi<T, R, C>;
 }

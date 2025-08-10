@@ -1,5 +1,13 @@
 import { HandableInvocations } from "../types/handlable";
 
+/**
+ * 
+ * Im not happy with this functionality and it will eventually have to be refactored.
+ * The idea is to allow for complex attribute matching, such as nested attributes and custom logic.
+ * This is a work in progress and will be improved over time.
+ * 
+ */
+
 enum $ATTRIBUTE_CHAINS {
   AND = "and",
   OR = "or",

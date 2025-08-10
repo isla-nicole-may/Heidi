@@ -1,24 +1,28 @@
-import { Context, DynamoDBStreamEvent, SNSEvent } from "aws-lambda";
-import { heidi, heidiRouter, heidiTemplate } from "./middyWrapper";
+import {
+  Context,
+  DynamoDBRecord,
+  DynamoDBStreamEvent,
+  SNSEvent,
+} from "aws-lambda";
+import { heidi, heidiRouter, heidiTemplate } from "./heidi";
 import { MiddlewareObject } from "middy";
-import { HeidiMatcher } from "./helpers";
 
 const handlerFunc = () => true; // Your actual handler logic here, currently no type information provided...
 const middlewareFunc1 = (() => true) as unknown as MiddlewareObject<
-  DynamoDBStreamEvent,
+  DynamoDBRecord,
   any,
   Context
 >; // Example middleware, replace with actual logic
 const middlewareFunc2 = (() => true) as unknown as MiddlewareObject<
-  DynamoDBStreamEvent,
+  DynamoDBRecord,
   any,
   Context
 >; // Example middleware, replace with actual logic
 
-const baseTemplate = heidiTemplate<DynamoDBStreamEvent, any, never, Context>() // Create a template instance, never goes into middy instances...
+const baseTemplate = heidiTemplate<DynamoDBRecord, any, Context>() // Create a template instance, never goes into middy instances...
   .use([middlewareFunc1]); // wrapped version of middy use function
 
-const template = heidiTemplate<DynamoDBStreamEvent, any, never, Context>() // Create a template instance, never goes into middy instances...
+const template = heidiTemplate<DynamoDBRecord, any, Context>() // Create a template instance, never goes into middy instances...
   .configure({
     docType: ["exampleDocType"],
     eventName: ["INSERT", "MODIFY"],
@@ -30,14 +34,11 @@ const template = heidiTemplate<DynamoDBStreamEvent, any, never, Context>() // Cr
     version: "1.0.0",
     description: "A dummy example template for testing purposes",
   })
-  .setCustomMatcher([])
   .useTemplate([baseTemplate]) // Use the base template
   .use([middlewareFunc1, middlewareFunc2]) // wrapped version of middy use function
   .after([middlewareFunc1]); // wrapped version of middy after function
 
-const heidiHandler = heidi<DynamoDBStreamEvent, any, never, Context>(
-  handlerFunc
-)
+const heidiHandler = heidi<DynamoDBRecord, any, Context>(handlerFunc)
   .configure({
     docType: ["exampleDocType"],
     eventName: ["INSERT", "MODIFY"],
@@ -55,34 +56,11 @@ const heidiHandler = heidi<DynamoDBStreamEvent, any, never, Context>(
   .after([middlewareFunc1]) // wrapped version of middy after function
   .onError([middlewareFunc2]); // wrapped version of middy onError function
 
-type SNSEventConfig = {
-  attribute: string[];
-};
-
-const SNSEventMatcher: HeidiMatcher = {
-  matcher: (record, config) => true,
-  identifier: (record) => record.eventSource === "aws:sns", // Example identifier, replace with actual logic
-}
-
-const customHeidiHandler = heidi<never, any, SNSEventConfig, Context>(handlerFunc)
-  .configure({
-    attribute: ["exampleDocType"],
-  })
-  .setMetaData({
-    name: "ExampleHandler",
-    version: "1.0.0",
-    description: "A dummy example handler for testing purposes",
-  })
-  .use([middlewareFunc1]) // wrapped version of middy use function
-  .before([middlewareFunc2]) // wrapped version of middy before function
-  .after([middlewareFunc1]) // wrapped version of middy after function
-  .onError([middlewareFunc2]); // wrapped version of middy onError function
-
 // easily assemble routes into a named list
 const routes = [{ name: "staffHandler", route: heidiHandler }];
 
 // assemble the router from the named route list.
-const router = heidiRouter<DynamoDBStreamEvent, any, Context>(routes)
+const router = heidiRouter<DynamoDBRecord, any, Context>(routes)
   .use([middlewareFunc1, middlewareFunc2]) // wrapped version of middy use function
   .after([middlewareFunc1]) // wrapped version of middy after function
   .before([middlewareFunc2]) // wrapped version of middy before function
