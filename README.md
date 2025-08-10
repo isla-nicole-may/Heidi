@@ -1,9 +1,9 @@
 # Heidi - a high level wrapper for middy
 
-## NOTICE BOARD
-- Need to implement tests for internal functionality.
-- Need to implement the functionality inside useTemplate. 
-- Need to test functionality against AWS event types.
+## DEVELOPMENT NOTICE BOARD
+[] Need to implement tests for internal functionality.
+[] Need to implement the functionality inside useTemplate. 
+[] Need to test functionality against AWS event types.
 
 ## What is Heidi
 Heidi is an opinionated, high level abstraction of middy that provides declarative, reusable route handling configuration.
