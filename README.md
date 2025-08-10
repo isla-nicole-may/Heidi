@@ -6,7 +6,7 @@ The middy project: https://github.com/middyjs/middy
 
 - [ ] Need to implement tests for internal functionality.
 
-- [ ] Need to implement the functionality inside useTemplate. 
+- [x] Need to implement the functionality inside useTemplate. 
 
 - [ ] Need to test functionality against AWS event types.
 
