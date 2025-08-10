@@ -1,9 +1,4 @@
-import {
-  Context,
-  DynamoDBRecord,
-  DynamoDBStreamEvent,
-  SNSEvent,
-} from "aws-lambda";
+import { Context, DynamoDBRecord } from "aws-lambda";
 import { heidi, heidiRouter, heidiTemplate } from "./heidi";
 import { MiddlewareObject } from "middy";
 

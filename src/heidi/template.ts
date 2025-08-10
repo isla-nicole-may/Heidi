@@ -40,10 +40,10 @@ export function heidiTemplate<
   ) => {
     for (const template of templates) {
       const middlewares = template.getMiddleware();
-      heidiInstance.use(middlewares);
+      this.use(middlewares);
       const metaData = template.getMetadata();
-      heidiInstance.configure(template.getConfig()); // type needs to change
-      if (metaData) heidiInstance.setMetaData(metaData);
+      this.configure(template.getConfig()); // type needs to change
+      if (metaData) this.setMetaData(metaData);
     }
     return this;
   };
