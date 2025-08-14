@@ -6,7 +6,7 @@ The middy project: https://github.com/middyjs/middy
 
 - [ ] Need to implement tests for internal functionality.
 
-- [ ] Need to implement the functionality inside useTemplate. 
+- [x] Need to implement the functionality inside useTemplate. 
 
 - [ ] Need to test functionality against AWS event types.
 
@@ -107,7 +107,8 @@ const router = heidiRouter<DynamoDBStreamEvent, any, Context>(routes)
   .onError([middlewareFunc2]); // wrapped version of middy onError function
 ```
 
-### Heidi Routes with custom matchers
+### ~Heidi Routes with custom matchers~
+** removed functionality: I think this is a cool feature, but its out of scope currently, will revisit later **
 
 ```typescript
 type SNSEventConfig = {
