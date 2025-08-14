@@ -2,6 +2,7 @@ import { Middy, MiddlewareObject, MiddlewareFunction } from "middy";
 import { Context } from "aws-lambda";
 import { RenameKeys } from "../types/tools";
 import { $MAP_CONFIG_TO_RECORD } from "../types/handlable";
+import { EventMatcherType, RecordMatcherType } from "../helpers/matcher";
 
 export declare namespace heidi {
   interface HeidiMetadata {
@@ -30,7 +31,7 @@ export declare namespace heidi {
     // Assign reusable templates to the route, allows for shared middleware and validation, easier faster production.
     useTemplate(template: Array<HeidiTemplate<T, R, C>>): this;
     // Match event to the route, useful for routing logic.
-    matchRoute(record: T): this | undefined;
+    matchRoute(record: T): EventMatcherType | RecordMatcherType | undefined;
 
     // Make custom wrapper of use functionality that allows us to still return the heidi instance, not the middy instance;
     // make use of the super_use cast attribute.
@@ -49,7 +50,7 @@ export declare namespace heidi {
 
     getRoute(name: string): Heidi<T, R, C> | undefined; // Get a specific route by name
     getAllRoutes(): Array<Heidi<T, R, C>>; // Get all routes
-    matchRoute(record: T): Heidi<T, R, C> | undefined; // Match a record to a route
+    matchRoute(recordOrEvent: T): Heidi<T, R, C> | undefined; // Match a record to a route
     addRoute(name: string, route: Heidi<T, R, C>): void; // Add a new route
     // Metadata for the router, useful in configuration.
     setMetaData(metaData: HeidiMetadata): this;

@@ -1,6 +1,7 @@
 import { DynamoDBRecord } from "aws-lambda";
 import { heidi, heidiTemplate } from "../../heidi";
 import { heidi as heidiTypes } from "../../heidi/namespace";
+import { RecordMatcherType } from "../../helpers/matcher";
 
 const handler = async (event, context) => {
   return {
@@ -9,10 +10,8 @@ const handler = async (event, context) => {
   };
 };
 
-
 describe("Heidi type behaviour", () => {
-  beforeAll(() => {
-  });
+  beforeAll(() => {});
 
   test("should return Heidi instance with correct functions and attributes", () => {
     const heidiInstance = heidi<DynamoDBRecord>(handler);
@@ -43,6 +42,7 @@ describe("Heidi type behaviour", () => {
   });
 
   test("metadata method should correctly set the metadata and return heidi", () => {
+    const heidiInstance = heidi<DynamoDBRecord>(handler);
     const metadata: heidiTypes.HeidiMetadata = {
       name: "TestHeidi",
       description: "This is a test Heidi instance",
@@ -53,6 +53,7 @@ describe("Heidi type behaviour", () => {
   });
 
   test("templates contain the correct, limited, function state, and expanded attributes", () => {
+    const template = heidiTemplate();
     expect(template).toHaveProperty("useTemplate");
     expect(template).toHaveProperty("use");
     expect(template).toHaveProperty("before");
@@ -72,6 +73,7 @@ describe("Heidi type behaviour", () => {
   });
 
   test("Templates are able to inherit properties from other templates", () => {
+    const template = heidiTemplate();
     const dynamoDBconfig = {
       eventType: "APIGatewayEvent",
       pKey: { prefix: "test", suffix: "123" },
@@ -100,6 +102,8 @@ describe("Heidi type behaviour", () => {
       sKey: { prefix: "test", suffix: "456" },
       docType: "TestDocument",
     };
+
+    const template = heidiTemplate();
 
     template.configure(dynamoDBconfig);
 
@@ -133,20 +137,80 @@ describe("Heidi type behaviour", () => {
       docType: "TestDocument",
     };
 
+    const template = heidiTemplate();
+
     template.configure(dynamoDBconfig);
 
+    const heidiInstance = heidi<DynamoDBRecord>(handler);
+
+    template.configure(expectedConfig);
+    expect(template.config).toEqual(expectedConfig);
+
+    heidiInstance.useTemplate([template]);
+
+    expect(heidiInstance.config).toEqual(expectedConfig);
+  });
+
+  test("Heidi instances should inherit from templates in priotity order", () => {
+    const templateConfig1 = {
+      eventType: "S3Event",
+      docType: "TestDocument",
+    };
+
+    const templateConfig2 = {
+      eventType: "DynamoDBEvent",
+      pKey: { prefix: "test", suffix: "123" },
+      sKey: { prefix: "test", suffix: "456" },
+      docType: "UserDocument",
+    };
+
+    const expectedConfig = {
+      eventType: "S3Event",
+      pKey: { prefix: "test", suffix: "123" },
+      sKey: { prefix: "test", suffix: "456" },
+      docType: "TestDocument",
+    };
+
+    const template1 = heidiTemplate();
+    template1.configure(templateConfig1);
+
     const template2 = heidiTemplate();
+    template2.configure(templateConfig2);
 
-    template2.configure({
-      eventType: "S3Event",
-    });
+    const heidiInstance = heidi<DynamoDBRecord>(handler);
+    heidiInstance.useTemplate([template2, template1]);
 
-    expect(template2.config).toEqual({
-      eventType: "S3Event",
-    });
+    expect(heidiInstance.config).toEqual(expectedConfig);
+  });
 
-    template2.useTemplate([template]);
+  test("Heidi route event matching", () => {
+    const heidiConfig = {
+      eventType: ["INSERT"],
+      pKey: [{ prefix: "test", suffix: "123" }],
+      sKey: [{ prefix: "test", suffix: "456" }],
+      docType: ["UserDocument"],
+    };
 
-    expect(template2.config).toEqual(expectedConfig);
+    const heidiInstance = heidi<DynamoDBRecord>(handler);
+    heidiInstance.configure(heidiConfig);
+    expect(heidiInstance.config).toEqual(heidiConfig);
+
+    const record: DynamoDBRecord = {
+      eventName: "INSERT", // matches route config
+      eventSource: "aws:dynamodb",
+      dynamodb: {
+        Keys: {
+          partitionKey: { S: "test123" }, // matches route config
+          sortKey: { S: "test456" }, // matches route config
+        },
+        NewImage: {
+          docType: { S: "UserDocument" },
+        },
+      },
+    };
+
+    const match = heidiInstance.matchRoute(record);
+    expect(match).toBeDefined();
+    expect(match).toEqual(RecordMatcherType.DynamoDB);
   });
 });

@@ -11,6 +11,7 @@ import {
   isSNSEventRecord,
   isSQSRecord,
 } from "./recordIdentifiers";
+import { MatcherError } from "./matcher";
 
 export function isAPIGatewayEvent(event: unknown) {
   const apiGatewayEvent_httpMethod: keyof APIGatewayEvent = "httpMethod";
@@ -43,18 +44,26 @@ export function isS3Event(event: unknown) {
   return recordIsS3Record;
 }
 
-export function isDynamoDBStreamEvent(event: unknown) {
+export function isDynamoDBStreamEvent(event: unknown): MatcherError {
   const apiGatewayEvent_records: keyof DynamoDBStreamEvent = "Records";
   const holdsRecords =
     typeof event === "object" &&
     event !== null &&
     apiGatewayEvent_records in event;
 
-  if (!holdsRecords) return false;
+  if (!holdsRecords)
+    return {
+      match: false,
+      error: "Not a DynamoDB stream event! does not hold records",
+    };
 
   const hasRecords = (event as S3Event).Records?.length > 0;
 
-  if (!hasRecords) return false;
+  if (!hasRecords)
+    return {
+      match: false,
+      error: "Not a DynamoDB stream event! records are empty",
+    };
 
   const recordIsDynamoDBRecord = isDynamoDBRecord(
     (event as DynamoDBStreamEvent).Records[0]
@@ -63,36 +72,52 @@ export function isDynamoDBStreamEvent(event: unknown) {
   return recordIsDynamoDBRecord;
 }
 
-export function isSQSEvent(event: unknown) {
+export function isSQSEvent(event: unknown) : MatcherError {
   const apiGatewayEvent_records: keyof SQSEvent = "Records";
   const holdsRecords =
     typeof event === "object" &&
     event !== null &&
     apiGatewayEvent_records in event;
 
-  if (!holdsRecords) return false;
+  if (!holdsRecords)
+    return {
+      match: false,
+      error: "Not a SQS stream event! does not hold records",
+    };
 
   const hasRecords = (event as S3Event).Records?.length > 0;
 
-  if (!hasRecords) return false;
+  if (!hasRecords)
+    return {
+      match: false,
+      error: "Not a SQS stream event! records are empty",
+    };
 
   const recordIsSQSRecord = isSQSRecord((event as SQSEvent).Records[0]);
 
   return recordIsSQSRecord;
 }
 
-export function isSNSEvent(event: unknown) {
+export function isSNSEvent(event: unknown) : MatcherError {
   const apiGatewayEvent_records: keyof SNSEvent = "Records";
   const holdsRecords =
     typeof event === "object" &&
     event !== null &&
     apiGatewayEvent_records in event;
 
-  if (!holdsRecords) return false;
+  if (!holdsRecords)
+    return {
+      match: false,
+      error: "Not an SNS stream event! does not hold records",
+    };
 
   const hasRecords = (event as S3Event).Records?.length > 0;
 
-  if (!hasRecords) return false;
+  if (!hasRecords)
+    return {
+      match: false,
+      error: "Not an SNS stream event! records are empty",
+    };
 
   const recordIsSNSRecord = isSNSEventRecord((event as SNSEvent).Records[0]);
 

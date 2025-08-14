@@ -83,9 +83,15 @@ export function dynamoDBRecordMatcher(
     conditions.push(
       config.pKey.some(
         (p) =>
-          (p.prefix ? image.partitionKey.S?.startsWith(p.prefix) : true) &&
-          (p.suffix ? image.partitionKey.S?.endsWith(p.suffix) : true) &&
-          (p.equals ? image.partitionKey.S?.endsWith(p.equals) : true)
+          (p.prefix
+            ? record.dynamodb?.Keys?.partitionKey?.S?.startsWith(p.prefix)
+            : true) &&
+          (p.suffix
+            ? record.dynamodb?.Keys?.partitionKey?.S?.endsWith(p.suffix)
+            : true) &&
+          (p.equals
+            ? record.dynamodb?.Keys?.partitionKey?.S?.endsWith(p.equals)
+            : true)
       )
     );
   }
@@ -94,9 +100,15 @@ export function dynamoDBRecordMatcher(
     conditions.push(
       config.sKey.some(
         (s) =>
-          (s.prefix ? image.partitionKey.S?.startsWith(s.prefix) : true) &&
-          (s.suffix ? image.partitionKey.S?.endsWith(s.suffix) : true) &&
-          (s.equals ? image.partitionKey.S?.endsWith(s.equals) : true)
+          (s.prefix
+            ? record.dynamodb?.Keys?.partitionKey?.S?.startsWith(s.prefix)
+            : true) &&
+          (s.suffix
+            ? record.dynamodb?.Keys?.partitionKey?.S?.endsWith(s.suffix)
+            : true) &&
+          (s.equals
+            ? record.dynamodb?.Keys?.partitionKey?.S?.endsWith(s.equals)
+            : true)
       )
     );
   }

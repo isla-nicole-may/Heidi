@@ -1,13 +1,14 @@
 import { Context } from "aws-lambda";
 import middy, { Middy, MiddlewareObject, MiddlewareFunction } from "middy";
-import { $MAP_CONFIG_TO_RECORD } from "../types/handlable";
+import { $MAP_CONFIG_TO_RECORD, HandleableEvents, HandleableRecords } from "../types/handlable";
 import { heidi } from "./namespace";
+import { matchRoute } from "../helpers/matcher";
 
 /**
  * Minimises the middy handler and casts it's type as the extendable
  * heidi interface.
  */
-function heidiWrapper<T, R, C extends Context>(
+function heidiWrapper<T extends HandleableEvents | HandleableRecords, R, C extends Context>(
   handler: middy.Middy<T, R, C>
 ): heidi.Heidi<T, R, C> {
   // minise middy to its extendable handler functionality.
@@ -26,7 +27,7 @@ function heidiWrapper<T, R, C extends Context>(
  * @param  {function} handler - your original AWS Lambda function
  * @return {middy} - a `middy` instance
  */
-export function heidi<T = any, R = any, C extends Context = Context>(
+export function heidi<T extends HandleableEvents | HandleableRecords = any , R = any, C extends Context = Context>(
   handler
 ): heidi.Heidi<T, R, C> {
   const instance = middy(handler) as Middy<T, R, C>;
@@ -43,9 +44,8 @@ export function heidi<T = any, R = any, C extends Context = Context>(
     return wrappedInstance;
   };
 
-  wrappedInstance.matchRoute = (record: T) => {
-    // TODO: Logic to match the record to the route, useful for routing logic.
-    return wrappedInstance; // Placeholder, needs actual matching logic
+  wrappedInstance.matchRoute = (recordOrEvent: T) => {
+    return matchRoute(recordOrEvent, wrappedInstance.config);
   };
 
   wrappedInstance.setMetaData = (metaData: heidi.HeidiMetadata) => {

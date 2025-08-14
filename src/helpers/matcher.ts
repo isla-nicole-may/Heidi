@@ -3,7 +3,6 @@ import {
   SQSRecord,
   S3EventRecord,
   SNSEventRecord,
-  SQSEvent,
   APIGatewayEvent,
 } from "aws-lambda";
 import { HandleableRecords, HandleableEvents } from "../types/handlable";
@@ -43,6 +42,28 @@ export enum EventMatcherType {
   S3 = "s3EventMatcher",
   SNS = "snsEventMatcher",
   APIGateway = "apiGatewayEventMatcher",
+}
+
+export interface MatcherError {
+  match: boolean;
+  error: string | undefined;
+}
+
+export function matchRoute(
+  event: HandleableEvents | HandleableRecords,
+  routeConfig: PassableEventConfigs | PassableRecordConfigs
+): EventMatcherType | RecordMatcherType | undefined {
+  const eventMatch =
+    matchEventToConfig(
+      event as HandleableEvents,
+      routeConfig as PassableEventConfigs
+    ) ??
+    matchRecordToConfig(
+      event as HandleableRecords,
+      routeConfig as PassableRecordConfigs
+    );
+
+  return eventMatch;
 }
 
 export function matchEventToConfig(
