@@ -1,4 +1,4 @@
-import { Middy, MiddlewareObject } from "middy";
+import { Middy, MiddlewareObject, MiddlewareFunction } from "middy";
 import { Context } from "aws-lambda";
 import { RenameKeys } from "../types/tools";
 import { $MAP_CONFIG_TO_RECORD } from "../types/handlable";
@@ -35,9 +35,9 @@ export declare namespace heidi {
     // Make custom wrapper of use functionality that allows us to still return the heidi instance, not the middy instance;
     // make use of the super_use cast attribute.
     use: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
-    after: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
-    before: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
-    onError: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
+    after: (middleware: Array<MiddlewareFunction<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
+    before: (middleware: Array<MiddlewareFunction<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
+    onError: (middleware: Array<MiddlewareFunction<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
   }
 
   // Used to assemble similar heidi routes into a router.
@@ -67,6 +67,7 @@ export declare namespace heidi {
       | "configure"
       | "metaData"
       | "setMetaData"
+      | "templates"
       | "useTemplate"
       | "use" // useTemplate makes the template inheritable
       | "after"
@@ -90,34 +91,21 @@ export declare namespace heidi {
 
   // template is just Heidi with the static attributes of heidi, not the wrapper functionality.
   // This is used to create a template that can be used to create new Heidi instances easily and repeatably.
-  interface $HEIDI_TEMPLATE_INTERNAL<T, R, C extends Context>
+  interface HeidiTemplate<T, R, C extends Context>
     extends ExtendableHeidi<T, R, C> {
+    uses: Array<MiddlewareObject<T, R, C>>;
+    afters: Array<MiddlewareFunction<T, R, C>>;
+    befores: Array<MiddlewareFunction<T, R, C>>;
+    onErrors: Array<MiddlewareFunction<T, R, C>>;
+    templates: Array<HeidiTemplate<T, R, C>>; // allows for nested templates
+
     setMetaData(metaData: HeidiMetadata): this; // allows us to set metadata on the template
     configure(config: $MAP_CONFIG_TO_RECORD<T>): this; // implement mapping logic
     useTemplate(template: Array<HeidiTemplate<T, R, C>>): this;
 
-    // allows us to extract template attributes to assign to new Heidi instances.
-    getConfig: () => $MAP_CONFIG_TO_RECORD<T>; // returns the config of the template
-    getMetadata: () => HeidiMetadata | undefined; // returns the metadata of the template
-    getMiddleware: () => Array<MiddlewareObject<any, any, Context>>; // need to resolve type from middy package
-
     use: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
-    after: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
-    before: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
-    onError: (middleware: Array<MiddlewareObject<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
+    after: (middleware: Array<MiddlewareFunction<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
+    before: (middleware: Array<MiddlewareFunction<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
+    onError: (middleware: Array<MiddlewareFunction<T, R, C>>) => this; // allows us to use middleware on the route, useful for shared middleware
   }
-
-  export type HeidiTemplate<T, R, C extends Context> = Pick<
-    $HEIDI_TEMPLATE_INTERNAL<T, R, C>,
-    | "setMetaData"
-    | "getMetadata"
-    | "configure"
-    | "getConfig"
-    | "getMiddleware"
-    | "use"
-    | "after"
-    | "before"
-    | "onError"
-    | "useTemplate"
-  >;
 }

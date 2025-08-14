@@ -1,14 +1,15 @@
 import { Context } from "aws-lambda";
-import { MiddlewareObject } from "middy";
-import { heidi } from "./namespace";
+import { MiddlewareFunction, MiddlewareObject } from "middy";
+import { heidi as heidiTypes } from "./namespace";
+import { $MAP_CONFIG_TO_RECORD } from "../types/handlable";
 
-function heidiTemplateWrapper<T, R, C extends Context>(): heidi.HeidiTemplate<
+function heidiTemplateWrapper<
   T,
   R,
-  C
-> {
+  C extends Context
+>(): heidiTypes.HeidiTemplate<T, R, C> {
   // return an empty HeidiTemplate instance
-  return {} as heidi.HeidiTemplate<T, R, C>;
+  return {} as heidiTypes.HeidiTemplate<T, R, C>;
 }
 
 /**
@@ -20,75 +21,61 @@ export function heidiTemplate<
   T = any,
   R = any,
   C extends Context = Context
->(): heidi.HeidiTemplate<T, R, C> {
+>(): heidiTypes.HeidiTemplate<T, R, C> {
   const heidiInstance = heidiTemplateWrapper<T, R, C>();
 
+  heidiInstance.uses = []; // Initialize uses
+  heidiInstance.befores = []; // Initialize befores
+  heidiInstance.afters = []; // Initialize afters
+  heidiInstance.onErrors = []; // Initialize onErrors
+
+  heidiInstance.templates = []; // Initialize templates
+  heidiInstance.config = {} as $MAP_CONFIG_TO_RECORD<T>; // Initialize config
+  heidiInstance.metaData = {} as heidiTypes.HeidiMetadata; // Initialize metadata
+
   heidiInstance.configure = (config) => {
-    const newHeidiInstance = Object.assign(heidiInstance, { config });
-    this.heidiInstance = newHeidiInstance; // Assuming heidiInstance has a config property
-    return this;
+    heidiInstance.config = config;
+    return heidiInstance;
   };
 
-  heidiInstance.setMetaData = (metaData: heidi.HeidiMetadata) => {
-    const newHeidiInstance = Object.assign(heidiInstance, { metaData });
-    this.heidiInstance = newHeidiInstance; // Assuming heidiInstance has a heidiMetadata property
-    return this;
+  heidiInstance.setMetaData = (metaData: heidiTypes.HeidiMetadata) => {
+    heidiInstance.metaData = metaData;
+    return heidiInstance;
   };
 
   heidiInstance.useTemplate = (
-    templates: Array<heidi.HeidiTemplate<T, R, C>>
+    templates: Array<heidiTypes.HeidiTemplate<T, R, C>>
   ) => {
     for (const template of templates) {
-      const middlewares = template.getMiddleware();
-      this.use(middlewares);
-      const metaData = template.getMetadata();
-      this.configure(template.getConfig()); // type needs to change
-      if (metaData) this.setMetaData(metaData);
+      heidiInstance.templates.push(template);
+      heidiInstance.use([...heidiInstance.uses, ...template.uses]);
+      const metaData = template.metaData;
+      heidiInstance.configure({ ...template.config, ...heidiInstance.config }); // type needs to change
+      if (metaData)
+        heidiInstance.setMetaData({ ...heidiInstance.metaData, ...metaData });
     }
-    return this;
+    return heidiInstance;
   };
 
   heidiInstance.use = (middlewares: Array<MiddlewareObject<T, R, C>>) => {
-    // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_use)
-      throw new Error(
-        "super_use is not defined; middy instance may not be initialised correctly."
-      );
-    for (const middleware of middlewares) this.instance.super_use(middleware);
-    return this;
+    heidiInstance.uses.push(...middlewares);
+    return heidiInstance;
   };
 
-  heidiInstance.before = (middlewares: Array<MiddlewareObject<T, R, C>>) => {
-    // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_before)
-      throw new Error(
-        "super_use is not defined; middy instance may not be initialised correctly."
-      );
-    for (const middleware of middlewares)
-      this.instance.super_before(middleware);
-    return this;
+  heidiInstance.before = (middlewares: Array<MiddlewareFunction<T, R, C>>) => {
+    heidiInstance.befores.push(...middlewares);
+    return heidiInstance;
   };
 
-  heidiInstance.after = (middlewares: Array<MiddlewareObject<T, R, C>>) => {
-    // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_after)
-      throw new Error(
-        "super_use is not defined; middy instance may not be initialised correctly."
-      );
-    for (const middleware of middlewares) this.instance.super_after(middleware);
-    return this;
+  heidiInstance.after = (middlewares: Array<MiddlewareFunction<T, R, C>>) => {
+    heidiInstance.afters.push(...middlewares);
+    return heidiInstance;
   };
 
-  heidiInstance.onError = (middlewares: Array<MiddlewareObject<T, R, C>>) => {
-    // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_onError)
-      throw new Error(
-        "super_use is not defined; middy instance may not be initialised correctly."
-      );
-    for (const middleware of middlewares)
-      this.instance.super_onError(middleware);
-    return this;
+  heidiInstance.onError = (middlewares: Array<MiddlewareFunction<T, R, C>>) => {
+    heidiInstance.onErrors.push(...middlewares);
+    return heidiInstance;
   };
 
-  return this.heidiInstance as heidi.HeidiTemplate<T, R, C>; // does not include heidi handler functionality, only the template functionality.
+  return heidiInstance;
 }
