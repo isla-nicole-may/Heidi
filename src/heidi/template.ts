@@ -1,7 +1,7 @@
 import { Context } from "aws-lambda";
-import { MiddlewareFunction, MiddlewareObject } from "middy";
+import { MiddlewareFunction } from "middy";
 import { heidi as heidiTypes } from "./namespace";
-import { $MAP_CONFIG_TO_RECORD } from "../types/handlable";
+import { $EventConfig } from "./eventTools";
 
 function heidiTemplateWrapper<
   T,
@@ -24,13 +24,12 @@ export function heidiTemplate<
 >(): heidiTypes.HeidiTemplate<T, R, C> {
   const heidiInstance = heidiTemplateWrapper<T, R, C>();
 
-  heidiInstance.uses = []; // Initialize uses
   heidiInstance.befores = []; // Initialize befores
   heidiInstance.afters = []; // Initialize afters
   heidiInstance.onErrors = []; // Initialize onErrors
 
   heidiInstance.templates = []; // Initialize templates
-  heidiInstance.config = {} as $MAP_CONFIG_TO_RECORD<T>; // Initialize config
+  heidiInstance.config = {} as $EventConfig<T>; // Initialize config
   heidiInstance.metaData = {} as heidiTypes.HeidiMetadata; // Initialize metadata
 
   heidiInstance.configure = (config) => {
@@ -48,17 +47,14 @@ export function heidiTemplate<
   ) => {
     for (const template of templates) {
       heidiInstance.templates.push(template);
-      heidiInstance.use([...heidiInstance.uses, ...template.uses]);
+      heidiInstance.before([...heidiInstance.befores, ...template.befores]);
+      heidiInstance.after([...heidiInstance.afters, ...template.afters]);
+      heidiInstance.onError([...heidiInstance.onErrors, ...template.onErrors]);
       const metaData = template.metaData;
       heidiInstance.configure({ ...template.config, ...heidiInstance.config }); // type needs to change
       if (metaData)
         heidiInstance.setMetaData({ ...heidiInstance.metaData, ...metaData });
     }
-    return heidiInstance;
-  };
-
-  heidiInstance.use = (middlewares: Array<MiddlewareObject<T, R, C>>) => {
-    heidiInstance.uses.push(...middlewares);
     return heidiInstance;
   };
 

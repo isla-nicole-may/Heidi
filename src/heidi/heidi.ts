@@ -1,14 +1,13 @@
 import { Context } from "aws-lambda";
-import middy, { Middy, MiddlewareObject, MiddlewareFunction } from "middy";
-import { $MAP_CONFIG_TO_RECORD, HandleableEvents, HandleableRecords } from "../types/handlable";
+import middy, { Middy, MiddlewareFunction } from "middy";
 import { heidi } from "./namespace";
-import { matchRoute } from "../helpers/matcher";
+import { $EventConfig, matchEventToRoute } from "./eventTools";
 
 /**
  * Minimises the middy handler and casts it's type as the extendable
  * heidi interface.
  */
-function heidiWrapper<T extends HandleableEvents | HandleableRecords, R, C extends Context>(
+function heidiWrapper<T, R, C extends Context>(
   handler: middy.Middy<T, R, C>
 ): heidi.Heidi<T, R, C> {
   // minise middy to its extendable handler functionality.
@@ -27,29 +26,52 @@ function heidiWrapper<T extends HandleableEvents | HandleableRecords, R, C exten
  * @param  {function} handler - your original AWS Lambda function
  * @return {middy} - a `middy` instance
  */
-export function heidi<T extends HandleableEvents | HandleableRecords = any , R = any, C extends Context = Context>(
-  handler
+export function heidi<T = any , R = any, C extends Context = Context>(
+  handler: (event: T) => Promise<R> | R
 ): heidi.Heidi<T, R, C> {
-  const instance = middy(handler) as Middy<T, R, C>;
+  const instance = middy(handler);
   const wrappedInstance = heidiWrapper<T, R, C>(instance as Middy<T, R, C>);
 
   wrappedInstance.metaData = {} as heidi.HeidiMetadata; // Initialize metadata};
   wrappedInstance.templates = []; // Initialize templates
-  wrappedInstance.config = {} as $MAP_CONFIG_TO_RECORD<T>; // Initialize config
+  wrappedInstance.config = {} as $EventConfig<T>; // Initialize config
 
   //let heidiObj = new CHeidi<T, R, C>(handler, wrappedInstance);
 
-  wrappedInstance.configure = (config: $MAP_CONFIG_TO_RECORD<T>) => {
+  wrappedInstance.handleRequest = async (event: T) => {
+    return instance(event, wrappedInstance.metaData, () => {});
+  }
+
+  wrappedInstance.configure = (config: $EventConfig<T>) => {
     wrappedInstance.config = config; // Assuming heidiInstance has a config property
     return wrappedInstance;
   };
 
   wrappedInstance.matchRoute = (recordOrEvent: T) => {
-    return matchRoute(recordOrEvent, wrappedInstance.config);
+    return matchEventToRoute(recordOrEvent, wrappedInstance.config);
   };
 
-  wrappedInstance.setMetaData = (metaData: heidi.HeidiMetadata) => {
-    wrappedInstance.metaData = metaData; // Assuming heidiInstance has a heidiMetadata property
+  wrappedInstance.setMetaData = (metaData: Partial<heidi.HeidiMetadata>) => {
+
+    const defaultMetaData: heidi.HeidiMetadata = {
+      name: "",
+      description: "",
+      version: "",
+      functionName: metaData.functionName || "",
+      functionVersion: metaData.functionVersion || "",
+      invokedFunctionArn: metaData.invokedFunctionArn || "",
+      memoryLimitInMB: metaData.memoryLimitInMB || "",
+      awsRequestId: metaData.awsRequestId || "",
+      logGroupName: metaData.logGroupName || "",
+      logStreamName: metaData.logStreamName || "",
+      getRemainingTimeInMillis: metaData.getRemainingTimeInMillis || (() => 0),
+      callbackWaitsForEmptyEventLoop: metaData.callbackWaitsForEmptyEventLoop ?? true,
+      done: metaData.done || ((error?: Error, result?: any) => {}),
+      fail: metaData.fail || ((error: Error | string) => {}),
+      succeed: metaData.succeed || ((messageOrObject: any) => {})
+    };
+
+    wrappedInstance.metaData = { ...defaultMetaData, ...metaData };
     return wrappedInstance;
   };
 
@@ -57,20 +79,13 @@ export function heidi<T extends HandleableEvents | HandleableRecords = any , R =
     templates: Array<heidi.HeidiTemplate<T, R, C>>
   ) => {
     for (const template of templates) {
-      wrappedInstance.use(template.uses);
+      wrappedInstance.before(template.befores);
+      wrappedInstance.after(template.afters);
+      wrappedInstance.onError(template.onErrors);
+      // merge config and metadata
       wrappedInstance.configure({...wrappedInstance.config, ...template.config}); // type needs to change
       if (template.metaData) wrappedInstance.setMetaData({...wrappedInstance.metaData, ...template.metaData});
     }
-    return wrappedInstance;
-  };
-
-  wrappedInstance.use = (middlewares: Array<MiddlewareObject<T, R, C>>) => {
-    // assign the middlewares into the super_use function of the middy instance.
-    if (!wrappedInstance.super_use)
-      throw new Error(
-        "super_use is not defined; middy instance may not be initialised correctly."
-      );
-    for (const middleware of middlewares) wrappedInstance.super_use(middleware);
     return wrappedInstance;
   };
 

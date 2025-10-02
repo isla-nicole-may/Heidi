@@ -1,7 +1,8 @@
 import { Context } from "aws-lambda";
-import { MiddlewareObject, Middy } from "middy";
+import { MiddlewareFunction, Middy } from "middy";
 import { heidi } from "./namespace";
 import middy from "middy";
+import { deQueueEvent, ProcessableEvents } from "./eventTools";
 
 function heidiRouterWrapper<T, R, C extends Context>(): heidi.HeidiRouter<
   T,
@@ -24,10 +25,14 @@ function heidiRouterWrapper<T, R, C extends Context>(): heidi.HeidiRouter<
   return extendableMiddyHandler as heidi.HeidiRouter<T, R, C>;
 }
 
-export function heidiRouter<T = any, R = any, C extends Context = Context>(
+export function heidiRouter<
+  T extends ProcessableEvents = any,
+  R = any,
+  C extends Context = Context
+>(
   routes: Array<{ name: string; route: heidi.Heidi<T, R, C> }>
 ): heidi.HeidiRouter<T, R, C> {
-  const heidiRouterInstance = heidiRouterWrapper<T, R, C>();
+  let heidiRouterInstance = heidiRouterWrapper<T, R, C>();
 
   heidiRouterInstance.routes = routes;
 
@@ -40,9 +45,19 @@ export function heidiRouter<T = any, R = any, C extends Context = Context>(
     return heidiRouterInstance.routes.map((route) => route.route);
   };
 
-  heidiRouterInstance.matchRoute = (record: T) => {
+  heidiRouterInstance.handleRequest = async (recordOrEvent: T) => {
+    const records = deQueueEvent(recordOrEvent);
+    for (const record of records) {
+      const matchedRoute = heidiRouterInstance.matchRoute(record as T);
+      if (matchedRoute) {
+        return await matchedRoute.handleRequest(record as T);
+      }
+    }
+  };
+
+  heidiRouterInstance.matchRoute = (recordOrEvent: T) => {
     return heidiRouterInstance.routes.find((route) =>
-      route.route.matchRoute(record)
+      route.route.matchRoute(recordOrEvent)
     )?.route;
   };
 
@@ -57,56 +72,47 @@ export function heidiRouter<T = any, R = any, C extends Context = Context>(
     const newHeidiRouterInstance = Object.assign(heidiRouterInstance, {
       metaData,
     });
-    this.heidiRouterInstance = newHeidiRouterInstance; // Assuming heidiRouterInstance has a heidiMetadata property
-    return this;
-  };
-
-  heidiRouterInstance.use = (middlewares: Array<MiddlewareObject<T, R, C>>) => {
-    // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_use)
-      throw new Error(
-        "super_use is not defined; middy instance may not be initialised correctly."
-      );
-    for (const middleware of middlewares) this.instance.super_use(middleware);
-    return this;
+    heidiRouterInstance = newHeidiRouterInstance; // Assuming heidiRouterInstance has a heidiMetadata property
+    return heidiRouterInstance;
   };
 
   heidiRouterInstance.before = (
-    middlewares: Array<MiddlewareObject<T, R, C>>
+    middlewares: Array<MiddlewareFunction<T, R, C>>
   ) => {
     // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_before)
+    if (!heidiRouterInstance.super_before)
       throw new Error(
         "super_use is not defined; middy instance may not be initialised correctly."
       );
     for (const middleware of middlewares)
-      this.instance.super_before(middleware);
-    return this;
+      heidiRouterInstance.super_before(middleware);
+    return heidiRouterInstance;
   };
 
   heidiRouterInstance.after = (
-    middlewares: Array<MiddlewareObject<T, R, C>>
+    middlewares: Array<MiddlewareFunction<T, R, C>>
   ) => {
     // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_after)
-      throw new Error(
-        "super_use is not defined; middy instance may not be initialised correctly."
-      );
-    for (const middleware of middlewares) this.instance.super_after(middleware);
-    return this;
-  };
-
-  heidiRouterInstance.onError = (
-    middlewares: Array<MiddlewareObject<T, R, C>>
-  ) => {
-    // assign the middlewares into the super_use function of the middy instance.
-    if (!this.instance.super_onError)
+    if (!heidiRouterInstance.super_after)
       throw new Error(
         "super_use is not defined; middy instance may not be initialised correctly."
       );
     for (const middleware of middlewares)
-      this.instance.super_onError(middleware);
-    return this;
+      heidiRouterInstance.super_after(middleware);
+    return heidiRouterInstance;
+  };
+
+  heidiRouterInstance.onError = (
+    middlewares: Array<MiddlewareFunction<T, R, C>>
+  ) => {
+    // assign the middlewares into the super_use function of the middy instance.
+    if (!heidiRouterInstance.super_onError)
+      throw new Error(
+        "super_use is not defined; middy instance may not be initialised correctly."
+      );
+    for (const middleware of middlewares)
+      heidiRouterInstance.super_onError(middleware);
+    return heidiRouterInstance;
   };
 
   return heidiRouterInstance as heidi.HeidiRouter<T, R, C>;
