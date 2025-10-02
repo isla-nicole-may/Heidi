@@ -9,7 +9,7 @@ A flexible TypeScript-first extension of [Middy](https://middy.js.org/) that add
 - **Template System**: Reusable middleware and configuration templates
 - **Router Pattern**: Group multiple handlers with shared middleware
 - **Middy Integration**: Full compatibility with existing Middy middleware
-- **Zero Runtime Dependencies**: Compile-time type checking with runtime efficiency
+- **Optimized Performance**: Compile-time type checking with efficient runtime validation
 
 ## 📦 Installation
 
@@ -21,10 +21,11 @@ pnpm add @heidi/core
 yarn add @heidi/core
 ```
 
-**Peer Dependencies:**
+**Dependencies included:**
 
-- `middy`: ^0.36.0
-- `typia`: ^9.7.2
+- `middy`: ^0.36.0 - Middleware framework
+- `typia`: ^9.7.2 - Runtime type validation
+- `ajv`: ^8.17.1 - JSON Schema validation
 
 ## 🎯 Quick Start
 
