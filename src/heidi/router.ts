@@ -30,19 +30,14 @@ export function heidiRouter<
   R = any,
   C extends Context = Context
 >(
-  routes: Array<{ name: string; route: heidi.Heidi<T, R, C> }>
+  routes: Array<heidi.Heidi<T, R, C>>
 ): heidi.HeidiRouter<T, R, C> {
   let heidiRouterInstance = heidiRouterWrapper<T, R, C>();
 
   heidiRouterInstance.routes = routes;
 
-  heidiRouterInstance.getRoute = (name: string) => {
-    return heidiRouterInstance.routes.find((route) => route.name === name)
-      ?.route;
-  };
-
   heidiRouterInstance.getAllRoutes = () => {
-    return heidiRouterInstance.routes.map((route) => route.route);
+    return heidiRouterInstance.routes;
   };
 
   heidiRouterInstance.handleRequest = async (recordOrEvent: T) => {
@@ -57,15 +52,14 @@ export function heidiRouter<
 
   heidiRouterInstance.matchRoute = (recordOrEvent: T) => {
     return heidiRouterInstance.routes.find((route) =>
-      route.route.matchRoute(recordOrEvent)
-    )?.route;
+      route.matchRoute(recordOrEvent)
+    );
   };
 
   heidiRouterInstance.addRoute = (
-    name: string,
     route: heidi.Heidi<T, R, C>
   ) => {
-    heidiRouterInstance.routes.push({ name, route });
+    heidiRouterInstance.routes.push(route);
   };
 
   heidiRouterInstance.setMetaData = (metaData: heidi.HeidiMetadata) => {

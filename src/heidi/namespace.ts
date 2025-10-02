@@ -44,13 +44,12 @@ export declare namespace heidi {
     // able to assign middleware at the router level, runs before and after any handler logic, wraps handler logic.
     extends ExtendableMiddyHandler<T, R, C> {
     handleRequest: (recordOrEvent: T) => Promise<any>;
-    routes: Array<{ name: string; route: Heidi<T, R, C> }>; // Array of routes
+    routes: Array<Heidi<T, R, C>>; // Array of routes
     metaData?: HeidiMetadata; // Metadata for the router, useful in configuration.
 
-    getRoute(name: string): Heidi<T, R, C> | undefined; // Get a specific route by name
     getAllRoutes(): Array<Heidi<T, R, C>>; // Get all routes
     matchRoute(recordOrEvent: T): Heidi<T, R, C> | undefined; // Match a record to a route
-    addRoute(name: string, route: Heidi<T, R, C>): void; // Add a new route
+    addRoute(route: Heidi<T, R, C>): void; // Add a new route
     // Metadata for the router, useful in configuration.
     setMetaData(metaData: HeidiMetadata): this;
 
